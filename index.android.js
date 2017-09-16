@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import { StackNavigator } from 'react-navigation';
 import { SensorManager } from 'NativeModules';
-import { SharedPreferences } from 'react-native-shared-preferences';
+import SharedPreferences from 'react-native-shared-preferences';
 
 SensorManager.startStepCounter(1000);
 
@@ -38,7 +38,7 @@ class Login extends Component {
     const { navigate } = this.props.navigation;
     return (
       <Button
-      onPress={() => login()}
+      onPress={() => this.login()}
       title="ログイン"
       accessibilityLabel="Learn more about this purple button"
       />
@@ -49,7 +49,9 @@ class Login extends Component {
     // 1.フォームデータを取得
     // フォームの情報を永続化しておく
     //
-    SharedPreferences.setItem("id",1);
+    SharedPreferences.setItem("id",'1');
+    SharedPreferences.setItem("count",'100');
+    const { navigate } = this.props.navigation;
     navigate('Main');
   }
 }
@@ -61,24 +63,59 @@ class Main extends Component {
   };
   constructor(props) {
     super(props)
-    this.state = { count: 0 };
+    this.state = { id: 0, count: 0, updatedAt: '', noticedAt: '', error: '' };
     this.countUp = this.countUp.bind(this)
+    this.syncServer = this.syncServer.bind(this)
   }
+  // 歩数をカウントアップする
   countUp(step) {
     this.setState({ count: step })
   }
+  //サーバへ同期する
+  syncServer(){
+    if (this.state.id > 0) {
+      fetch(`http://127.0.0.1:3000/api/v1/insurers/${this.state.id}/walk_logs/`, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          count: this.state.count
+        }) })
+      .then((response) => response.json())
+      .then((responseData) => {
+        this.setState({count: 300});
+        return [];
+      })
+      .catch((error) => {
+        console.log(error);
+      })
+    }
+  }
   componentDidMount() {
     // 永続化したデータの読み出し
-    this.setState({count: SharedPreferences.getItem("count")});
-    DeviceEventEmitter.addListener('StepCounter', (data) => {
-      this.countUp(data.steps)
-      /**
-       * data.steps
-       **/
+    SharedPreferences.getItems(['id', "count", "updatedAt", "noticedAt"] , (values) =>  {
+      this.setState({id: parseInt(values[0]), count: parseInt(values[1]), updatedAt: values[2], noticedAt: values[3]});
+      // アプリロード時に毎回同期
+      this.syncServer();
+
+      // stateをできたらカウントを実行する
+      DeviceEventEmitter.addListener('StepCounter', (data) => {
+        /**
+         * data.steps
+         **/
+        this.countUp(data.steps)
+      });
     });
   }
   componentWillUnmount() {
     // データを永続化
+    SharedPreferences.setItem("count", this.state.count.toString());
+    SharedPreferences.setItem("updatedAt", this.state.updatedAt);
+    SharedPreferences.setItem("noticedAt", this.state.noticedAt);
+    this.syncServer();
+
     SensorManager.stopStepCounter();
   }
   render() {

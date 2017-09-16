@@ -12,6 +12,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import com.sensormanager.SensorManagerPackage; // <------ add package
+import in.sriraman.sharedpreferences.RNSharedPreferencesReactPackage;  // <--- import
 
 public class MainApplication extends Application implements ReactApplication {
 
