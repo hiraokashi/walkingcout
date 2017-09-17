@@ -16,9 +16,9 @@ import {
 } from 'react-native';
 import { StackNavigator } from 'react-navigation';
 import { SensorManager } from 'NativeModules';
-import SharedPreferences from 'react-native-shared-preferences';
 import Moment from 'moment';
 import Config from 'react-native-config';
+import store from 'react-native-simple-store';
 SensorManager.startStepCounter(1000);
 
 
@@ -37,9 +37,9 @@ class Login extends Component {
     // ログイン済みなら歩数画面へ遷移
     const { navigate } = this.props.navigation;
 
-    SharedPreferences.getItem("id", (value) => {
-      if (value) {
-        this.setState({id: parseInt(value)});
+    store.get('state').then((state) => {
+      if (state && state.id) {
+        this.setState({id: state.id});
         navigate('Main');
       }
     });
@@ -105,10 +105,10 @@ class Login extends Component {
     // 1.フォームデータを取得
     // フォームの情報を永続化しておく
     const { navigate } = this.props.navigation;
-    SharedPreferences.setItem("id",this.state.input_id.toString());
-    SharedPreferences.setItem("count",'0');
-    this.setState({id: this.state.input_id});
-    navigate('Main');
+    store.update('state', {id: this.state.input_id, count: 0}).then(() => {
+      this.setState({id: this.state.input_id});
+      navigate('Main');
+    });
   }
 }
 
@@ -171,15 +171,18 @@ class Main extends Component {
   resetCount() {
     if (this.isNextDate()) {
       let current = Moment(new Date()).format('YYYYMMDD')
-      SharedPreferences.setItem("count",'0');
-      SharedPreferences.setItem("updatedAt",current);
-      this.setState({ count: 0, updatedAt: current });
+
+      // 永続化
+      store.update('state', {count: 0, updatedAt: current}).then(() => {
+        this.setState({ count: 0, updatedAt: current });
+      });
     }
   }
   componentDidMount() {
     // 永続化したデータの読み出し
-    SharedPreferences.getItems(['id', "count", "updatedAt"] , (values) =>  {
-      this.setState({id: parseInt(values[0]), count: parseInt(values[1]), updatedAt: values[2]});
+    //
+    store.get('state').then((state) => {
+      this.setState(state);
       //起動が次の日であれば、カウンタをリセット
       this.resetCount();
       // アプリロード時に毎回同期
@@ -196,10 +199,10 @@ class Main extends Component {
   }
   componentWillUnmount() {
     // データを永続化
-    SharedPreferences.setItem("count", this.state.count.toString());
-    this.syncServer();
-
-    SensorManager.stopStepCounter();
+    store.update('state', {count: this.state.count}).then(() => {
+      this.syncServer();
+      SensorManager.stopStepCounter();
+    });
   }
   render() {
     const { navigate } = this.props.navigation;
