@@ -3,6 +3,7 @@ package com.walkingcount;
 import android.app.Application;
 
 import com.facebook.react.ReactApplication;
+import com.lugg.ReactNativeConfig.ReactNativeConfigPackage;
 import com.facebook.react.ReactNativeHost;
 import com.facebook.react.ReactPackage;
 import com.facebook.react.shell.MainReactPackage;
@@ -25,7 +26,8 @@ public class MainApplication extends Application implements ReactApplication {
     @Override
     protected List<ReactPackage> getPackages() {
       return Arrays.<ReactPackage>asList(
-          new MainReactPackage(), // <---- add comma
+          new MainReactPackage(),
+            new ReactNativeConfigPackage(), // <---- add comma
           new SensorManagerPackage(), // <---------- add package
           new RNSharedPreferencesReactPackage() // <--- Add this
       );

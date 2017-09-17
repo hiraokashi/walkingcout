@@ -18,6 +18,7 @@ import { StackNavigator } from 'react-navigation';
 import { SensorManager } from 'NativeModules';
 import SharedPreferences from 'react-native-shared-preferences';
 import Moment from 'moment';
+import Config from 'react-native-config';
 SensorManager.startStepCounter(1000);
 
 
@@ -28,7 +29,8 @@ class Login extends Component {
   constructor(props) {
     super(props)
     this.state = {id: 0, input_id: 0};
-    this.login = this.login.bind(this)
+    this.login = this.login.bind(this);
+    this.isValidId = this.isValidId.bind(this);
   }
   componentDidMount() {
     // 永続化したデータの読み出し
@@ -42,12 +44,16 @@ class Login extends Component {
       }
     });
   }
+
+  isValidId(){
+    return this.state.id > 0
+  }
   render(){
     const { navigate } = this.props.navigation;
     return (
       <View style={{padding: 10}}>
       {(() => {
-        if (this.state.id <= 0) {
+        if (!this.isValidId()) {
           return (
             <View style={{padding: 10}}>
             <TextInput
@@ -62,10 +68,10 @@ class Login extends Component {
             />
             </View>
           );
-        } 
+        }
       })()}
       {(() => {
-        if (this.state.id > 0) {
+        if (this.isValidId()) {
           return (
             <View style={{padding: 10}}>
             <Text>
@@ -113,18 +119,22 @@ class Main extends Component {
   };
   constructor(props) {
     super(props)
-    this.state = { id: 0, count: 0, updatedAt: '', noticedAt: '', error: '' };
-    this.countUp = this.countUp.bind(this)
-    this.syncServer = this.syncServer.bind(this)
+    this.state = { id: 0, count: 0, updatedAt: null , test: ''};
+    this.countUp = this.countUp.bind(this);
+    this.syncServer = this.syncServer.bind(this);
+    this.isNextDate = this.isNextDate.bind(this);
+    this.resetCount = this.resetCount.bind(this);
   }
-  // 歩数をカウントアップする
+
+  // 歩数を更新する
   countUp(step) {
     this.setState({ count: step })
   }
+
   //サーバへ同期する
   syncServer(){
     if (this.state.id > 0) {
-      fetch(`http://127.0.0.1:3000/api/v1/insurers/${this.state.id}/walk_logs/`, {
+      fetch(`${Config.API_ENDPOINT}insurers/${this.state.id}/walk_logs/`, {
         method: 'POST',
         headers: {
           'Accept': 'application/json',
@@ -142,23 +152,46 @@ class Main extends Component {
       })
     }
   }
+
+  // アプリ起動が次の日かどうか
+  isNextDate() {
+    if (!this.state.updatedAt) {
+      this.setState({test: 'aaaaa'})
+      return true;
+    }
+    let current = Moment(new Date()).format('YYYYMMDD');
+    let recent = Moment(this.state.updatedAt).format('YYYYMMDD');
+    if (current != recent) {
+      return true;
+    }
+    return false;
+  }
+
+  // カウンターをリセット
+  resetCount() {
+    if (this.isNextDate()) {
+      let current = Moment(new Date()).format('YYYYMMDD')
+      SharedPreferences.setItem("count",'0');
+      SharedPreferences.setItem("updatedAt",current);
+      this.setState({ count: 0, updatedAt: current });
+    }
+  }
   componentDidMount() {
     // 永続化したデータの読み出し
-    SharedPreferences.getItems(['id', "count"] , (values) =>  {
-      this.setState({id: parseInt(values[0]), count: parseInt(values[1])});
+    SharedPreferences.getItems(['id', "count", "updatedAt"] , (values) =>  {
+      this.setState({id: parseInt(values[0]), count: parseInt(values[1]), updatedAt: values[2]});
+      //起動が次の日であれば、カウンタをリセット
+      this.resetCount();
       // アプリロード時に毎回同期
+      // 初回は0で通知されます
       this.syncServer();
 
       // stateをできたらカウントを実行する
-      DeviceEventEmitter.addListener('StepCounter', (data) => {
-        /**
-         * data.steps
-         **/
-        this.countUp(data.steps)
-      });
-      setInterval(() => {
-        this.countUp(this.state.count + 1)
-      }, 1500);
+      DeviceEventEmitter.addListener('StepCounter', (data) => { this.countUp(data.steps) });
+      // 開発環境では歩数計は動かないのでタイマーでカウントアップを再現する
+      if (Config.SENSOR_MOCK) {
+        setInterval(() => { this.countUp(this.state.count + 1) }, 1500);
+      }
     });
   }
   componentWillUnmount() {
@@ -173,14 +206,14 @@ class Main extends Component {
     Moment.locale('ja');
     return (
       <View style={styles.container}>
+        <Text style={styles.instructions}>
+         ID: {this.state.id} 
+        </Text>
       <Text style={styles.instructions}>
-      ID: {this.state.id} 
-      </Text>
-      <Text style={styles.instructions}>
-      {Moment(new Date()).format('YYYY年MM月DD日')} 
+        {Moment(new Date()).format('YYYY年MM月DD日')} 
       </Text>
       <Text style={styles.welcome}>
-           {this.state.count}歩！
+        {this.state.count}歩！
       </Text>
       </View>
     );
