@@ -9,6 +9,7 @@ import {
   AppRegistry,
   StyleSheet,
   Text,
+  TextInput,
   View,
   Button,
   DeviceEventEmitter // will emit events that you can listen to
@@ -16,7 +17,7 @@ import {
 import { StackNavigator } from 'react-navigation';
 import { SensorManager } from 'NativeModules';
 import SharedPreferences from 'react-native-shared-preferences';
-
+import Moment from 'moment';
 SensorManager.startStepCounter(1000);
 
 
@@ -26,32 +27,81 @@ class Login extends Component {
   };
   constructor(props) {
     super(props)
+    this.state = {id: 0, input_id: 0};
     this.login = this.login.bind(this)
   }
-  componentWillMount() {
+  componentDidMount() {
     // 永続化したデータの読み出し
     // ログイン済みなら歩数画面へ遷移
     const { navigate } = this.props.navigation;
-    if (false) navigate('Main')
+
+    SharedPreferences.getItem("id", (value) => {
+      if (value) {
+        this.setState({id: parseInt(value)});
+        navigate('Main');
+      }
+    });
   }
   render(){
     const { navigate } = this.props.navigation;
     return (
-      <Button
-      onPress={() => this.login()}
-      title="ログイン"
-      accessibilityLabel="Learn more about this purple button"
-      />
-    );
+      <View style={{padding: 10}}>
+      {(() => {
+        if (this.state.id <= 0) {
+          return (
+            <View style={{padding: 10}}>
+            <TextInput
+            style={{height: 40}}
+            placeholder="IDを入力してください"
+            onChangeText={(input_id) => this.setState({input_id: parseInt(input_id)})}
+            />
+            <Button
+            onPress={() => this.login()}
+            title="ログイン"
+            accessibilityLabel="Learn more about this purple button"
+            />
+            </View>
+          );
+        } 
+      })()}
+      {(() => {
+        if (this.state.id > 0) {
+          return (
+            <View style={{padding: 10}}>
+            <Text>
+            ID: {this.state.id}
+            </Text>
+            <Text>
+            ようこそ！
+            </Text>
+            <Button
+            onPress={() => navigate('Main')}
+            title="歩数計測を開始する"
+            accessibilityLabel="Learn more about this purple button"
+            />
+            <Text style={{marginTop: 350}}>
+            </Text>
+            <Button 
+            color="#DDD"
+            onPress={() => this.setState({id: 0})}
+            title="IDリセット"
+            accessibilityLabel="Learn more about this purple button"
+            />
+            </View>
+          );
+        }
+      })()}
+        </View>
+      );
   }
 
   login(){
     // 1.フォームデータを取得
     // フォームの情報を永続化しておく
-    //
-    SharedPreferences.setItem("id",'1');
-    SharedPreferences.setItem("count",'100');
     const { navigate } = this.props.navigation;
+    SharedPreferences.setItem("id",this.state.input_id.toString());
+    SharedPreferences.setItem("count",'0');
+    this.setState({id: this.state.input_id});
     navigate('Main');
   }
 }
@@ -59,7 +109,7 @@ class Login extends Component {
 
 class Main extends Component {
   static navigationOptions = {
-    title: '歩数計測',
+    title: '歩数を計測しています....',
   };
   constructor(props) {
     super(props)
@@ -85,7 +135,6 @@ class Main extends Component {
         }) })
       .then((response) => response.json())
       .then((responseData) => {
-        this.setState({count: 300});
         return [];
       })
       .catch((error) => {
@@ -95,8 +144,8 @@ class Main extends Component {
   }
   componentDidMount() {
     // 永続化したデータの読み出し
-    SharedPreferences.getItems(['id', "count", "updatedAt", "noticedAt"] , (values) =>  {
-      this.setState({id: parseInt(values[0]), count: parseInt(values[1]), updatedAt: values[2], noticedAt: values[3]});
+    SharedPreferences.getItems(['id', "count"] , (values) =>  {
+      this.setState({id: parseInt(values[0]), count: parseInt(values[1])});
       // アプリロード時に毎回同期
       this.syncServer();
 
@@ -107,23 +156,30 @@ class Main extends Component {
          **/
         this.countUp(data.steps)
       });
+      setInterval(() => {
+        this.countUp(this.state.count + 1)
+      }, 1500);
     });
   }
   componentWillUnmount() {
     // データを永続化
     SharedPreferences.setItem("count", this.state.count.toString());
-    SharedPreferences.setItem("updatedAt", this.state.updatedAt);
-    SharedPreferences.setItem("noticedAt", this.state.noticedAt);
     this.syncServer();
 
     SensorManager.stopStepCounter();
   }
   render() {
     const { navigate } = this.props.navigation;
+    Moment.locale('ja');
     return (
       <View style={styles.container}>
+      <Text style={styles.instructions}>
+      ID: {this.state.id} 
+      </Text>
+      <Text style={styles.instructions}>
+      {Moment(new Date()).format('YYYY年MM月DD日')} 
+      </Text>
       <Text style={styles.welcome}>
-          今日の歩数
            {this.state.count}歩！
       </Text>
       </View>
