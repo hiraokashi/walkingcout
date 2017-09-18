@@ -23,7 +23,7 @@ export default class Main extends Component {
   };
   constructor(props) {
     super(props)
-    this.state = { id: 0, count: 0, updatedAt: null , test: ''};
+    this.state = { id: 0, currentStep: 0, prevTotalStep: 0, updatedAt: null};
     this.countUp = this.countUp.bind(this);
     this.syncServer = this.syncServer.bind(this);
     this.isNextDate = this.isNextDate.bind(this);
@@ -33,7 +33,7 @@ export default class Main extends Component {
   // 歩数を更新する
   countUp(step) {
     // 歩数を累計するロジックは見直す必要あり
-    this.setState({ count: step })
+    this.setState({ currentStep: step})
   }
 
   //サーバへ同期する
@@ -46,7 +46,7 @@ export default class Main extends Component {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          count: this.state.count
+          count: this.state.prevTotalStep
         }) })
       .then((response) => response.json())
       .then((responseData) => {
@@ -61,7 +61,6 @@ export default class Main extends Component {
   // アプリ起動が次の日かどうか
   isNextDate() {
     if (!this.state.updatedAt) {
-      this.setState({test: 'aaaaa'})
       return true;
     }
     let current = Moment(new Date()).format('YYYYMMDD');
@@ -78,8 +77,8 @@ export default class Main extends Component {
       let current = Moment(new Date()).format('YYYYMMDD')
 
       // 永続化
-      store.update('state', {count: 0, updatedAt: current}).then(() => {
-        this.setState({ count: 0, updatedAt: current });
+      store.update('state', {currentStep: 0, updatedAt: current}).then(() => {
+        this.setState({ currentStep: 0, updatedAt: current });
       });
     }
   }
@@ -98,13 +97,15 @@ export default class Main extends Component {
       DeviceEventEmitter.addListener('StepCounter', (data) => { this.countUp(data.steps) });
       // 開発環境では歩数計は動かないのでタイマーでカウントアップを再現する
       if (Config.SENSOR_MOCK) {
-        setInterval(() => { this.countUp(this.state.count + 1) }, 1500);
+        setInterval(() => {
+          this.countUp(this.state.currentStep + 1)
+        }, 1500);
       }
     });
   }
   componentWillUnmount() {
     // データを永続化
-    store.update('state', {count: this.state.count}).then(() => {
+    store.update('state', {prevTotalStep: this.state.prevTotalStep + this.state.currentStep}).then(() => {
       this.syncServer();
       SensorManager.stopStepCounter();
     });
@@ -115,13 +116,13 @@ export default class Main extends Component {
     return (
       <View style={styles.container}>
         <Text style={styles.instructions}>
-         ID: {this.state.id} 
+         ID: {this.state.id}
         </Text>
       <Text style={styles.instructions}>
-        {Moment(new Date()).format('YYYY年MM月DD日')} 
+        {Moment(new Date()).format('YYYY年MM月DD日')}
       </Text>
       <Text style={styles.welcome}>
-        {this.state.count}歩！
+        {this.state.prevTotalStep + this.state.currentStep}歩！
       </Text>
       </View>
     );

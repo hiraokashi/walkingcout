@@ -94,7 +94,7 @@ export default class Login extends Component {
     // 1.フォームデータを取得
     // フォームの情報を永続化しておく
     const { navigate } = this.props.navigation;
-    store.update('state', {id: this.state.input_id, count: 0}).then(() => {
+    store.update('state', {id: this.state.input_id}).then(() => {
       this.setState({id: this.state.input_id});
       navigate('Main');
     });
