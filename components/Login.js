@@ -72,6 +72,7 @@ export default class Login extends Component {
             <Button
             onPress={() => navigate('Main')}
             title="歩数計測を開始する"
+            color="#F97163"
             accessibilityLabel="Learn more about this purple button"
             />
             <Text style={{marginTop: 350}}>
@@ -107,15 +108,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#F5FCFF',
-  },
-  welcome: {
-    fontSize: 20,
-    textAlign: 'center',
-    margin: 10,
-  },
-  instructions: {
-    textAlign: 'center',
-    color: '#333333',
-    marginBottom: 5,
+    paddingTop: 5,
+    marginBottom: 10,
   },
 });

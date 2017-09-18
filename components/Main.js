@@ -115,15 +115,27 @@ export default class Main extends Component {
     Moment.locale('ja');
     return (
       <View style={styles.container}>
-        <Text style={styles.instructions}>
-         ID: {this.state.id}
-        </Text>
-      <Text style={styles.instructions}>
-        {Moment(new Date()).format('YYYY年MM月DD日')}
-      </Text>
-      <Text style={styles.welcome}>
-        {this.state.prevTotalStep + this.state.currentStep}歩！
-      </Text>
+        <View style={styles.headerContainer}>
+          <Text style={styles.headerId}>
+           ユーザID: {this.state.id}
+          </Text>
+          <Text style={styles.headerDate}>
+           {Moment(new Date()).format('YYYY年MM月DD日')}
+          </Text>
+        </View>
+        <View style={styles.contentsContainer}>
+          <Text style={styles.title}>
+           歩数
+          </Text>
+          <Text style={styles.count}>
+            {this.state.prevTotalStep + this.state.currentStep}
+          </Text>
+          <Text style={styles.unit}>
+           歩
+          </Text>
+        </View>
+        <View style={styles.dummyContainer}>
+        </View>
       </View>
     );
   }
@@ -135,15 +147,73 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#F5FCFF',
+    paddingTop: 5,
   },
-  welcome: {
+  headerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F7BFB9',
+    flexDirection: 'row',
+    margin: 5,
+    borderRadius: 2,
+  },
+  headerId: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
     fontSize: 20,
-    textAlign: 'center',
-    margin: 10,
+    marginLeft: 20,
+    color: '#F5FCFF',
   },
-  instructions: {
-    textAlign: 'center',
+  headerDate: {
+    flex: 1,
+    justifyContent: 'center',
+    fontSize: 20,
+    alignItems: 'center',
+    color: '#F5FCFF',
+  },
+  contentsContainer: {
+    flex: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F97163',
+    flexDirection: 'row',
+    margin: 5,
+    borderRadius: 5,
+  },
+  title: {
+    flex: 5,
+    fontSize: 20,
+    textAlign: 'left',
+    textAlignVertical: 'top',
+    paddingBottom: 40,
+    marginLeft: 20,
+    color: '#F5FCFF',
+  },
+  count: {
+    flex: 2,
+    textAlign: 'right',
     color: '#333333',
+    paddingBottom: 24,
     marginBottom: 5,
+    fontSize: 50,
+    color: '#F5FCFF',
+  },
+  unit: {
+    flex: 1,
+    textAlign: 'center',
+    textAlignVertical: 'bottom',
+    color: '#333333',
+    paddingTop: 0,
+    marginRight: 30,
+    color: '#F5FCFF',
+  },
+  dummyContainer: {
+    flex: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F5FCFF',
+    flexDirection: 'row',
   },
 });
