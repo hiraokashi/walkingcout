@@ -128,7 +128,7 @@ export default class Main extends Component {
            歩数
           </Text>
           <Text style={styles.count}>
-            {this.state.prevTotalStep + this.state.currentStep}
+            {String(this.state.prevTotalStep + this.state.currentStep).replace(/(\d)(?=(\d\d\d)+(?!\d))/g, '$1,').toLocaleString()}
           </Text>
           <Text style={styles.unit}>
            歩
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   title: {
-    flex: 5,
+    flex: 2,
     fontSize: 20,
     textAlign: 'left',
     textAlignVertical: 'top',
@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
     color: '#F5FCFF',
   },
   count: {
-    flex: 2,
+    flex: 5,
     textAlign: 'right',
     color: '#333333',
     paddingBottom: 24,
