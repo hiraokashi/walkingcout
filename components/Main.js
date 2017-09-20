@@ -7,7 +7,8 @@ import {
   TextInput,
   View,
   Button,
-  DeviceEventEmitter // will emit events that you can listen to
+  DeviceEventEmitter, // will emit events that you can listen to
+  Alert
 } from 'react-native';
 import { StackNavigator } from 'react-navigation';
 import { SensorManager } from 'NativeModules';
@@ -15,7 +16,7 @@ import Moment from 'moment';
 import Config from 'react-native-config';
 import store from 'react-native-simple-store';
 SensorManager.startStepCounter(1000);
-
+import { BackHandler } from 'react-native';
 
 export default class Main extends Component {
   static navigationOptions = {
@@ -23,11 +24,12 @@ export default class Main extends Component {
   };
   constructor(props) {
     super(props)
-    this.state = { id: 0, currentStep: 0, prevTotalStep: 0, updatedAt: null};
+    this.state = { id: 0, currentStep: 0, prevTotalStep: 0, offsetStep: 0, updatedAt: null};
     this.countUp = this.countUp.bind(this);
     this.syncServer = this.syncServer.bind(this);
     this.isNextDate = this.isNextDate.bind(this);
     this.resetCount = this.resetCount.bind(this);
+    this.save = this.save.bind(this);
   }
 
   // 歩数を更新する
@@ -77,8 +79,8 @@ export default class Main extends Component {
       let current = Moment(new Date()).format('YYYYMMDD')
 
       // 永続化
-      store.update('state', {currentStep: 0, updatedAt: current}).then(() => {
-        this.setState({ currentStep: 0, updatedAt: current });
+      store.update('state', {prevTotalStep: 0, currentStep: 0, offsetStep: 0, updatedAt: current}).then(() => {
+        this.setState({prevTotalStep: 0,  currentStep: 0, offsetStep: 0, updatedAt: current });
       });
     }
   }
@@ -94,18 +96,33 @@ export default class Main extends Component {
       this.syncServer();
 
       // stateをできたらカウントを実行する
-      DeviceEventEmitter.addListener('StepCounter', (data) => { this.countUp(data.steps) });
+      DeviceEventEmitter.addListener('StepCounter', (data) => {
+        // Androidのステップカウンタはカウントがクリアされないので初期値からの差分を歩数とみなす
+        if (this.isNextDate()) {
+          this.setState({offsetStep: Math.floor(data.steps)});
+        } else {
+          this.countUp(Math.floor(data.steps - this.state.offsetStep));
+        }
+      });
       // 開発環境では歩数計は動かないのでタイマーでカウントアップを再現する
-      if (Config.SENSOR_MOCK) {
-        setInterval(() => {
-          this.countUp(this.state.currentStep + 1)
-        }, 1500);
-      }
+      //if (Config.SENSOR_MOCK) {
+      //  setInterval(() => {
+      //    this.countUp(this.state.currentStep + 1)
+      //  }, 1500);
+      //}
+      BackHandler.addEventListener('hardwareBackPress', () => {
+        //戻るボタンでも保存する
+        this.save();
+        return false; // Don't exit the app.
+      });
     });
   }
   componentWillUnmount() {
+    this.save();
+  }
+  save(){
     // データを永続化
-    store.update('state', {prevTotalStep: this.state.prevTotalStep + this.state.currentStep}).then(() => {
+    store.update('state', {prevTotalStep: this.state.prevTotalStep + this.state.currentStep, offsetStep: this.state.offsetStep}).then(() => {
       this.syncServer();
       SensorManager.stopStepCounter();
     });
