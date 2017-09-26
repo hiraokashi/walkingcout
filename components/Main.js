@@ -13,6 +13,7 @@ import {
 import { StackNavigator } from 'react-navigation';
 import { SensorManager } from 'NativeModules';
 import Moment from 'moment';
+import 'moment/locale/ja';
 import Config from 'react-native-config';
 import store from 'react-native-simple-store';
 SensorManager.startStepCounter(1000);
@@ -42,6 +43,7 @@ export default class Main extends Component {
   syncServer(){
     if (this.state.id > 0) {
       fetch(`${Config.API_ENDPOINT}insurers/${this.state.id}/walk_logs/`, {
+      //fetch(`https://health-point-staging.herokuapp.com/api/v1/insurers/${this.state.id}/walk_logs/`, {
         method: 'POST',
         headers: {
           'Accept': 'application/json',

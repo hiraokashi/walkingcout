@@ -102,8 +102,8 @@ android {
 
     defaultConfig {
         applicationId "com.walkingcount"
-        minSdkVersion 16
-        targetSdkVersion 22
+        minSdkVersion 19
+        targetSdkVersion 23
         versionCode 1
         versionName "1.0"
         ndk {
@@ -146,11 +146,10 @@ android {
     // プロダクトフレーバー
     productFlavors {
       develop {
-          applicationIdSuffix ".dev"
           versionNameSuffix "-dev"
       }
       staging {
-          applicationIdSuffix ".stage"
+    //      applicationIdSuffix ".stage"
           versionNameSuffix "-stage"
       }
       product {
@@ -158,7 +157,6 @@ android {
           versionNameSuffix "-production"
       }
     }
-    // applicationVariants are e.g. debug, release
     applicationVariants.all { variant ->
         variant.outputs.each { output ->
             // For each separate APK per architecture, set a unique version code as described here:
